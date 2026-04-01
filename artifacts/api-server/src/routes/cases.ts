@@ -49,40 +49,50 @@ const STATUS_INSTRUCTIONS: Record<string, string> = {
 };
 
 type CreateCaseBody = {
-  fullName?: string;
-  email?: string;
-  studentId?: string;
-  caseDescription?: string;
-  canAccessCertificate?: string;
-  governorate?: string;
-  consentConfirmed?: boolean;
+  fullName?: unknown;
+  email?: unknown;
+  studentId?: unknown;
+  caseDescription?: unknown;
+  canAccessCertificate?: unknown;
+  governorate?: unknown;
+  consentConfirmed?: unknown;
 };
 
 type TrackCaseBody = {
-  caseNumber?: string;
-  email?: string;
+  caseNumber?: unknown;
+  email?: unknown;
 };
 
 type UploadDocumentBody = {
-  email?: string;
-  fileName?: string;
-  documentType?: string;
+  email?: unknown;
+  fileName?: unknown;
+  documentType?: unknown;
 };
 
 type ConfirmSentBody = {
-  email?: string;
+  email?: unknown;
 };
 
 type FollowUpResponseBody = {
-  email?: string;
-  response?: "yes" | "still_waiting";
+  email?: unknown;
+  response?: unknown;
 };
 
 type ExploitationReportBody = {
-  reporterNameOrAlias?: string;
-  contactMethod?: string;
-  notes?: string;
+  reporterNameOrAlias?: unknown;
+  contactMethod?: unknown;
+  notes?: unknown;
 };
+
+function getSingleValue(value: unknown): string | undefined {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value) && typeof value[0] === "string") return value[0];
+  return undefined;
+}
+
+function getBooleanValue(value: unknown): boolean {
+  return value === true;
+}
 
 function generateCaseNumber(id: number): string {
   const year = new Date().getFullYear();
@@ -96,22 +106,22 @@ function generateVerificationCode(): string {
 
 router.post("/cases", async (req: Request, res: Response): Promise<void> => {
   try {
-    const {
-      fullName,
-      email,
-      studentId,
-      caseDescription,
-      canAccessCertificate,
-      governorate,
-      consentConfirmed,
-    } = req.body as CreateCaseBody;
+    const body = req.body as CreateCaseBody;
+
+    const fullName = getSingleValue(body.fullName);
+    const email = getSingleValue(body.email);
+    const studentId = getSingleValue(body.studentId);
+    const caseDescription = getSingleValue(body.caseDescription);
+    const canAccessCertificate = getSingleValue(body.canAccessCertificate);
+    const governorate = getSingleValue(body.governorate);
+    const consentConfirmed = getBooleanValue(body.consentConfirmed);
 
     if (
       !fullName ||
       !email ||
       !caseDescription ||
       !canAccessCertificate ||
-      consentConfirmed !== true
+      !consentConfirmed
     ) {
       res.status(400).json({ error: "Missing required fields" });
       return;
@@ -178,7 +188,9 @@ router.post("/cases", async (req: Request, res: Response): Promise<void> => {
 
 router.post("/cases/track", async (req: Request, res: Response): Promise<void> => {
   try {
-    const { caseNumber, email } = req.body as TrackCaseBody;
+    const body = req.body as TrackCaseBody;
+    const caseNumber = getSingleValue(body.caseNumber);
+    const email = getSingleValue(body.email);
 
     if (!caseNumber || !email) {
       res.status(400).json({ error: "Case number and email are required" });
@@ -233,8 +245,11 @@ router.post(
   "/cases/:caseNumber/documents",
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const caseNumber = req.params.caseNumber;
-      const { email, fileName, documentType } = req.body as UploadDocumentBody;
+      const caseNumber = getSingleValue(req.params.caseNumber);
+      const body = req.body as UploadDocumentBody;
+      const email = getSingleValue(body.email);
+      const fileName = getSingleValue(body.fileName);
+      const documentType = getSingleValue(body.documentType);
 
       if (!caseNumber || !email || !fileName) {
         res.status(400).json({ error: "Missing required fields" });
@@ -278,8 +293,9 @@ router.post(
   "/cases/:caseNumber/confirm-sent",
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const caseNumber = req.params.caseNumber;
-      const { email } = req.body as ConfirmSentBody;
+      const caseNumber = getSingleValue(req.params.caseNumber);
+      const body = req.body as ConfirmSentBody;
+      const email = getSingleValue(body.email);
 
       if (!caseNumber || !email) {
         res.status(400).json({ error: "Case number and email are required" });
@@ -327,8 +343,10 @@ router.post(
   "/cases/:caseNumber/follow-up-response",
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const caseNumber = req.params.caseNumber;
-      const { email, response } = req.body as FollowUpResponseBody;
+      const caseNumber = getSingleValue(req.params.caseNumber);
+      const body = req.body as FollowUpResponseBody;
+      const email = getSingleValue(body.email);
+      const response = getSingleValue(body.response);
 
       if (!caseNumber || !email || !response) {
         res.status(400).json({ error: "Email and response are required" });
@@ -425,8 +443,10 @@ router.post(
   "/reports/exploitation",
   async (req: Request, res: Response): Promise<void> => {
     try {
-      const { reporterNameOrAlias, contactMethod, notes } =
-        req.body as ExploitationReportBody;
+      const body = req.body as ExploitationReportBody;
+      const reporterNameOrAlias = getSingleValue(body.reporterNameOrAlias);
+      const contactMethod = getSingleValue(body.contactMethod);
+      const notes = getSingleValue(body.notes);
 
       if (!reporterNameOrAlias) {
         res.status(400).json({ error: "Name or alias is required" });
