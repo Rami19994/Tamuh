@@ -1,17 +1,15 @@
-import { Router, type IRouter } from "express";
+import { Router, type Request, type Response } from "express";
 import { db } from "@workspace/db";
 import {
   casesTable,
   caseStatusHistoryTable,
-  internalNotesTable,
   exploitationReportsTable,
-  generatedDraftsTable,
   uploadsTable,
   auditLogsTable,
 } from "@workspace/db/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 
-const router: IRouter = Router();
+const router = Router();
 
 const STATUS_LABELS: Record<string, string> = {
   received: "تم الاستلام",
@@ -59,265 +57,369 @@ function generateVerificationCode(): string {
   return Math.random().toString(36).substring(2, 8).toUpperCase();
 }
 
-router.post("/cases", async (req, res) => {
-  const {
-    fullName,
-    email,
-    studentId,
-    caseDescription,
-    canAccessCertificate,
-    governorate,
-    consentConfirmed,
-  } = req.body;
-
-  if (!fullName || !email || !caseDescription || !canAccessCertificate || !consentConfirmed) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
-
-  const verificationCode = generateVerificationCode();
-
-  const [inserted] = await db
-    .insert(casesTable)
-    .values({
-      caseNumber: `TEMP-${Date.now()}`,
+router.post("/cases", async (req: Request, res: Response) => {
+  try {
+    const {
       fullName,
       email,
       studentId,
       caseDescription,
       canAccessCertificate,
       governorate,
-      status: "received",
-      verificationCode,
-      consentConfirmed: true,
-      currentInstruction: STATUS_INSTRUCTIONS["received"],
-    })
-    .returning();
+      consentConfirmed,
+    } = req.body as {
+      fullName?: string;
+      email?: string;
+      studentId?: string;
+      caseDescription?: string;
+      canAccessCertificate?: string;
+      governorate?: string;
+      consentConfirmed?: boolean;
+    };
 
-  const caseNumber = generateCaseNumber(inserted.id);
-  await db
-    .update(casesTable)
-    .set({ caseNumber })
-    .where(eq(casesTable.id, inserted.id));
+    if (
+      !fullName ||
+      !email ||
+      !caseDescription ||
+      !canAccessCertificate ||
+      !consentConfirmed
+    ) {
+      return res.status(400).json({ error: "Missing required fields" });
+    }
 
-  await db.insert(caseStatusHistoryTable).values({
-    caseId: inserted.id,
-    status: "received",
-    changedBy: "system",
-    note: "تم استلام الطلب",
-  });
+    const verificationCode = generateVerificationCode();
 
-  await db.insert(auditLogsTable).values({
-    action: "case_submitted",
-    caseId: inserted.id,
-    performedBy: email,
-    details: `Case ${caseNumber} submitted`,
-  });
+    const [inserted] = await db
+      .insert(casesTable)
+      .values({
+        caseNumber: `TEMP-${Date.now()}`,
+        fullName,
+        email,
+        studentId,
+        caseDescription,
+        canAccessCertificate,
+        governorate,
+        status: "received",
+        verificationCode,
+        consentConfirmed: true,
+        currentInstruction: STATUS_INSTRUCTIONS["received"],
+      })
+      .returning();
 
-  return res.status(201).json({
-    caseNumber,
-    message:
-      "تم تقديم طلبك بنجاح. يرجى الاحتفاظ برقم الحالة للمتابعة لاحقاً.",
-    verificationCode,
-  });
-});
+    const caseNumber = generateCaseNumber(inserted.id);
 
-router.post("/cases/track", async (req, res) => {
-  const { caseNumber, email } = req.body;
-
-  if (!caseNumber || !email) {
-    return res.status(400).json({ error: "Case number and email are required" });
-  }
-
-  const [caseRecord] = await db
-    .select()
-    .from(casesTable)
-    .where(eq(casesTable.caseNumber, caseNumber))
-    .limit(1);
-
-  if (!caseRecord || caseRecord.email.toLowerCase() !== email.toLowerCase()) {
-    return res.status(404).json({ error: "Case not found or email does not match" });
-  }
-
-  const responseData: Record<string, string | boolean | undefined> = {
-    caseNumber: caseRecord.caseNumber,
-    status: caseRecord.status,
-    statusLabel: STATUS_LABELS[caseRecord.status] || caseRecord.status,
-    currentInstruction:
-      caseRecord.currentInstruction || STATUS_INSTRUCTIONS[caseRecord.status] || "",
-    followUpResponse: caseRecord.followUpResponse || undefined,
-    isFlagged: caseRecord.isFlagged,
-  };
-
-  // Include emailDraft whenever a draft exists — relevant from draft_prepared onwards
-  const DRAFT_STATUSES = [
-    "approved_for_guidance",
-    "draft_prepared",
-    "awaiting_student_sending",
-    "sent_by_student",
-    "follow_up_in_progress",
-  ];
-  if (DRAFT_STATUSES.includes(caseRecord.status) && caseRecord.currentDraft) {
-    responseData.emailDraft = caseRecord.currentDraft;
-  }
-
-  return res.json(responseData);
-});
-
-router.post("/cases/:caseNumber/documents", async (req, res) => {
-  const { caseNumber } = req.params;
-  const { email, fileName, documentType } = req.body;
-
-  const [caseRecord] = await db
-    .select()
-    .from(casesTable)
-    .where(eq(casesTable.caseNumber, caseNumber))
-    .limit(1);
-
-  if (!caseRecord || caseRecord.email.toLowerCase() !== email?.toLowerCase()) {
-    return res.status(404).json({ error: "Case not found" });
-  }
-
-  await db.insert(uploadsTable).values({
-    caseId: caseRecord.id,
-    fileName,
-    documentType,
-  });
-
-  return res.json({ success: true, message: "تم رفع الملف بنجاح" });
-});
-
-router.post("/cases/:caseNumber/confirm-sent", async (req, res) => {
-  const { caseNumber } = req.params;
-  const { email } = req.body;
-
-  const [caseRecord] = await db
-    .select()
-    .from(casesTable)
-    .where(eq(casesTable.caseNumber, caseNumber))
-    .limit(1);
-
-  if (!caseRecord || caseRecord.email.toLowerCase() !== email?.toLowerCase()) {
-    return res.status(404).json({ error: "Case not found" });
-  }
-
-  await db
-    .update(casesTable)
-    .set({
-      status: "sent_by_student",
-      currentInstruction: STATUS_INSTRUCTIONS["sent_by_student"],
-      updatedAt: new Date(),
-    })
-    .where(eq(casesTable.id, caseRecord.id));
-
-  await db.insert(caseStatusHistoryTable).values({
-    caseId: caseRecord.id,
-    status: "sent_by_student",
-    changedBy: email,
-    note: "أكد الطالب إرسال الرسالة",
-  });
-
-  return res.json({ success: true, message: "تم تأكيد الإرسال بنجاح" });
-});
-
-// ── Follow-up response: POST /api/cases/:caseNumber/follow-up-response ──
-router.post("/cases/:caseNumber/follow-up-response", async (req, res) => {
-  const { caseNumber } = req.params;
-  const { email, response } = req.body;
-
-  if (!email || !response) {
-    return res.status(400).json({ error: "Email and response are required" });
-  }
-  if (!["yes", "still_waiting"].includes(response)) {
-    return res.status(400).json({ error: "Invalid response value" });
-  }
-
-  const [caseRecord] = await db
-    .select()
-    .from(casesTable)
-    .where(eq(casesTable.caseNumber, caseNumber))
-    .limit(1);
-
-  if (!caseRecord || caseRecord.email.toLowerCase() !== email.toLowerCase()) {
-    return res.status(404).json({ error: "Case not found or email does not match" });
-  }
-
-  if (caseRecord.status !== "follow_up_in_progress") {
-    return res.status(409).json({ error: "Case is not in follow-up stage" });
-  }
-
-  const now = new Date();
-
-  if (response === "yes") {
-    // Flag the case for admin review; keep status unchanged
     await db
       .update(casesTable)
-      .set({
-        followUpResponse: "yes",
-        isFlagged: true,
-        currentInstruction:
-          "تم استلام الرد المرفق وسيتم مراجعته من قبل الإدارة لتحديد النتيجة النهائية.",
-        updatedAt: now,
-      })
-      .where(eq(casesTable.id, caseRecord.id));
+      .set({ caseNumber })
+      .where(eq(casesTable.id, inserted.id));
 
     await db.insert(caseStatusHistoryTable).values({
-      caseId: caseRecord.id,
-      status: "follow_up_in_progress",
-      changedBy: email,
-      note: "أكد الطالب استلام رد على بريده الإلكتروني — لقطة الشاشة مرفوعة — في انتظار مراجعة الإدارة",
+      caseId: inserted.id,
+      status: "received",
+      changedBy: "system",
+      note: "تم استلام الطلب",
     });
 
     await db.insert(auditLogsTable).values({
-      action: "follow_up_response_yes",
-      caseId: caseRecord.id,
+      action: "case_submitted",
+      caseId: inserted.id,
       performedBy: email,
-      details: `الطالب أكد استلام رد على البريد الإلكتروني. الحالة مُعلَّمة لمراجعة الإدارة.`,
+      details: `Case ${caseNumber} submitted`,
     });
 
-    return res.json({
-      success: true,
-      message: "تم استلام ردك. ستتم مراجعته من قبل الإدارة لاتخاذ القرار النهائي.",
+    return res.status(201).json({
+      caseNumber,
+      message:
+        "تم تقديم طلبك بنجاح. يرجى الاحتفاظ برقم الحالة للمتابعة لاحقاً.",
+      verificationCode,
     });
-  } else {
-    // still_waiting — record but don't move case forward
-    await db
-      .update(casesTable)
-      .set({ followUpResponse: "still_waiting", updatedAt: now })
-      .where(eq(casesTable.id, caseRecord.id));
-
-    await db.insert(auditLogsTable).values({
-      action: "follow_up_response_still_waiting",
-      caseId: caseRecord.id,
-      performedBy: email,
-      details: "الطالب أبلغ أنه لا يزال ينتظر رداً على البريد الإلكتروني.",
-    });
-
-    return res.json({
-      success: true,
-      message: "تم تسجيل ردك. يرجى العودة لاحقاً عند استلام أي تحديث.",
-    });
+  } catch (error) {
+    console.error("Error creating case:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 });
 
-router.post("/reports/exploitation", async (req, res) => {
-  const { reporterNameOrAlias, contactMethod, notes } = req.body;
+router.post("/cases/track", async (req: Request, res: Response) => {
+  try {
+    const { caseNumber, email } = req.body as {
+      caseNumber?: string;
+      email?: string;
+    };
 
-  if (!reporterNameOrAlias) {
-    return res.status(400).json({ error: "Name or alias is required" });
+    if (!caseNumber || !email) {
+      return res
+        .status(400)
+        .json({ error: "Case number and email are required" });
+    }
+
+    const [caseRecord] = await db
+      .select()
+      .from(casesTable)
+      .where(eq(casesTable.caseNumber, caseNumber))
+      .limit(1);
+
+    if (!caseRecord || caseRecord.email.toLowerCase() !== email.toLowerCase()) {
+      return res
+        .status(404)
+        .json({ error: "Case not found or email does not match" });
+    }
+
+    const responseData: Record<string, string | boolean | undefined> = {
+      caseNumber: caseRecord.caseNumber,
+      status: caseRecord.status,
+      statusLabel: STATUS_LABELS[caseRecord.status] || caseRecord.status,
+      currentInstruction:
+        caseRecord.currentInstruction ||
+        STATUS_INSTRUCTIONS[caseRecord.status] ||
+        "",
+      followUpResponse: caseRecord.followUpResponse || undefined,
+      isFlagged: caseRecord.isFlagged,
+    };
+
+    const draftStatuses = [
+      "approved_for_guidance",
+      "draft_prepared",
+      "awaiting_student_sending",
+      "sent_by_student",
+      "follow_up_in_progress",
+    ];
+
+    if (draftStatuses.includes(caseRecord.status) && caseRecord.currentDraft) {
+      responseData.emailDraft = caseRecord.currentDraft;
+    }
+
+    return res.json(responseData);
+  } catch (error) {
+    console.error("Error tracking case:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
-
-  await db.insert(exploitationReportsTable).values({
-    reporterNameOrAlias,
-    contactMethod,
-    notes,
-    hasScreenshot: false,
-    isConfidential: true,
-  });
-
-  return res.status(201).json({
-    success: true,
-    message: "تم استلام بلاغك بسرية تامة. شكراً لمساعدتك في حماية الطلاب.",
-  });
 });
+
+router.post(
+  "/cases/:caseNumber/documents",
+  async (req: Request, res: Response) => {
+    try {
+      const { caseNumber } = req.params;
+      const { email, fileName, documentType } = req.body as {
+        email?: string;
+        fileName?: string;
+        documentType?: string;
+      };
+
+      if (!caseNumber || !email || !fileName) {
+        return res.status(400).json({ error: "Missing required fields" });
+      }
+
+      const [caseRecord] = await db
+        .select()
+        .from(casesTable)
+        .where(eq(casesTable.caseNumber, caseNumber))
+        .limit(1);
+
+      if (
+        !caseRecord ||
+        caseRecord.email.toLowerCase() !== email.toLowerCase()
+      ) {
+        return res.status(404).json({ error: "Case not found" });
+      }
+
+      await db.insert(uploadsTable).values({
+        caseId: caseRecord.id,
+        caseNumber: caseRecord.caseNumber,
+        fileName,
+        documentType,
+        uploadedBy: "student",
+      });
+
+      return res.json({ success: true, message: "تم رفع الملف بنجاح" });
+    } catch (error) {
+      console.error("Error uploading document:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
+
+router.post(
+  "/cases/:caseNumber/confirm-sent",
+  async (req: Request, res: Response) => {
+    try {
+      const { caseNumber } = req.params;
+      const { email } = req.body as {
+        email?: string;
+      };
+
+      if (!caseNumber || !email) {
+        return res
+          .status(400)
+          .json({ error: "Case number and email are required" });
+      }
+
+      const [caseRecord] = await db
+        .select()
+        .from(casesTable)
+        .where(eq(casesTable.caseNumber, caseNumber))
+        .limit(1);
+
+      if (
+        !caseRecord ||
+        caseRecord.email.toLowerCase() !== email.toLowerCase()
+      ) {
+        return res.status(404).json({ error: "Case not found" });
+      }
+
+      await db
+        .update(casesTable)
+        .set({
+          status: "sent_by_student",
+          currentInstruction: STATUS_INSTRUCTIONS["sent_by_student"],
+          updatedAt: new Date(),
+        })
+        .where(eq(casesTable.id, caseRecord.id));
+
+      await db.insert(caseStatusHistoryTable).values({
+        caseId: caseRecord.id,
+        status: "sent_by_student",
+        changedBy: email,
+        note: "أكد الطالب إرسال الرسالة",
+      });
+
+      return res.json({ success: true, message: "تم تأكيد الإرسال بنجاح" });
+    } catch (error) {
+      console.error("Error confirming sent status:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
+
+router.post(
+  "/cases/:caseNumber/follow-up-response",
+  async (req: Request, res: Response) => {
+    try {
+      const { caseNumber } = req.params;
+      const { email, response } = req.body as {
+        email?: string;
+        response?: string;
+      };
+
+      if (!caseNumber || !email || !response) {
+        return res
+          .status(400)
+          .json({ error: "Email and response are required" });
+      }
+
+      if (!["yes", "still_waiting"].includes(response)) {
+        return res.status(400).json({ error: "Invalid response value" });
+      }
+
+      const [caseRecord] = await db
+        .select()
+        .from(casesTable)
+        .where(eq(casesTable.caseNumber, caseNumber))
+        .limit(1);
+
+      if (!caseRecord || caseRecord.email.toLowerCase() !== email.toLowerCase()) {
+        return res
+          .status(404)
+          .json({ error: "Case not found or email does not match" });
+      }
+
+      if (caseRecord.status !== "follow_up_in_progress") {
+        return res.status(409).json({ error: "Case is not in follow-up stage" });
+      }
+
+      const now = new Date();
+
+      if (response === "yes") {
+        await db
+          .update(casesTable)
+          .set({
+            followUpResponse: "yes",
+            isFlagged: true,
+            currentInstruction:
+              "تم استلام الرد المرفق وسيتم مراجعته من قبل الإدارة لتحديد النتيجة النهائية.",
+            updatedAt: now,
+          })
+          .where(eq(casesTable.id, caseRecord.id));
+
+        await db.insert(caseStatusHistoryTable).values({
+          caseId: caseRecord.id,
+          status: "follow_up_in_progress",
+          changedBy: email,
+          note: "أكد الطالب استلام رد على بريده الإلكتروني — لقطة الشاشة مرفوعة — في انتظار مراجعة الإدارة",
+        });
+
+        await db.insert(auditLogsTable).values({
+          action: "follow_up_response_yes",
+          caseId: caseRecord.id,
+          performedBy: email,
+          details:
+            "الطالب أكد استلام رد على البريد الإلكتروني. الحالة مُعلَّمة لمراجعة الإدارة.",
+        });
+
+        return res.json({
+          success: true,
+          message:
+            "تم استلام ردك. ستتم مراجعته من قبل الإدارة لاتخاذ القرار النهائي.",
+        });
+      }
+
+      await db
+        .update(casesTable)
+        .set({
+          followUpResponse: "still_waiting",
+          updatedAt: now,
+        })
+        .where(eq(casesTable.id, caseRecord.id));
+
+      await db.insert(auditLogsTable).values({
+        action: "follow_up_response_still_waiting",
+        caseId: caseRecord.id,
+        performedBy: email,
+        details: "الطالب أبلغ أنه لا يزال ينتظر رداً على البريد الإلكتروني.",
+      });
+
+      return res.json({
+        success: true,
+        message: "تم تسجيل ردك. يرجى العودة لاحقاً عند استلام أي تحديث.",
+      });
+    } catch (error) {
+      console.error("Error saving follow-up response:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
+
+router.post(
+  "/reports/exploitation",
+  async (req: Request, res: Response) => {
+    try {
+      const { reporterNameOrAlias, contactMethod, notes } = req.body as {
+        reporterNameOrAlias?: string;
+        contactMethod?: string;
+        notes?: string;
+      };
+
+      if (!reporterNameOrAlias) {
+        return res.status(400).json({ error: "Name or alias is required" });
+      }
+
+      await db.insert(exploitationReportsTable).values({
+        reporterNameOrAlias,
+        contactMethod,
+        notes,
+        hasScreenshot: false,
+        isConfidential: true,
+      });
+
+      return res.status(201).json({
+        success: true,
+        message: "تم استلام بلاغك بسرية تامة. شكراً لمساعدتك في حماية الطلاب.",
+      });
+    } catch (error) {
+      console.error("Error creating exploitation report:", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  },
+);
 
 export default router;
