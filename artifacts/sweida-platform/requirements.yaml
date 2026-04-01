@@ -1,0 +1,20 @@
+packages:
+  "framer-motion": "For page transitions and polished micro-interactions"
+  "react-hook-form": "For robust form state management"
+  "@hookform/resolvers": "Zod integration for form validation"
+  "zod": "Schema definition and validation"
+  "date-fns": "For formatting case dates in the admin dashboard"
+  "lucide-react": "For beautiful crisp iconography"
+
+images:
+  - path: "artifacts/sweida-platform/public/images/hero-illustration.png"
+    description: "A clean, modern, institutional illustration in navy blue and subtle green showing documents being organized and secured. Abstract, geometric style, trustworthy humanitarian feel. Flat vector style, clean white background."
+    aspect_ratio: "16:9"
+  - path: "artifacts/sweida-platform/public/images/logo.png"
+    description: "Minimalist academic logo representing a shield and a graduation cap, monocolor navy blue. Clean, simple, institutional."
+    aspect_ratio: "1:1"
+
+notes:
+  - "Using existing Orval generated hooks from @workspace/api-client-react"
+  - "App is strictly Arabic RTL"
+  - "Admin requests use custom Authorization header with Bearer token from localStorage"
