@@ -1,0 +1,204 @@
+Create a secure Arabic RTL web platform for a volunteer team that helps University of the People students who are unable to submit proof of secondary school completion due to ongoing violence and document access disruption in Sweida since July.
+
+The platform must be professional, simple, confidential, mobile-friendly, and built for real operations, not just a marketing page.
+
+Main goal:
+Build a secure case-management website that allows students to request free and confidential help, while preventing exploitation, reducing information leaks, and ensuring that students only see the specific step they need at the current stage.
+
+Important principles:
+- The service is completely free.
+- Any person requesting money does not represent the team.
+- The platform must protect student privacy.
+- Students must NOT see the full workflow.
+- Students must NOT see counselor/advisor email addresses until the final stage, and only if their case is approved.
+- The website must be designed around “minimum necessary disclosure”.
+- The team does not send emails on behalf of students; the student sends from their own email after receiving a customized draft and final instructions.
+
+Language and design:
+- Entire website in Arabic, RTL layout.
+- Clean, modern, trustworthy design.
+- Calm colors: white, dark blue, gray, with subtle green accents.
+- Clear typography, strong accessibility, mobile-first design.
+- Tone: respectful, serious, humanitarian, non-political, non-commercial.
+
+Public pages:
+1. Home page
+   - Short explanation of the service.
+   - Emphasize: free, confidential, organized.
+   - Warning banner: anyone asking for money does not represent us.
+   - CTA button: “تقديم طلب مساعدة”
+   - CTA button: “التحقق من حالة الطلب”
+
+2. How it works page
+   - Show only high-level steps:
+     a. Submit request
+     b. Review and verification
+     c. Customized guidance
+     d. Follow-up
+   - Do NOT reveal operational details, internal workflow, advisor identities, or escalation structure.
+
+3. Privacy and confidentiality page
+   - Explain that only minimal data is collected.
+   - Explain that data is visible only to authorized team members.
+   - Explain that details of successful cases and communication channels are not publicly shared.
+
+4. Report exploitation page
+   - Simple form for reporting anyone demanding money for help.
+   - Fields: name or alias, contact method, screenshot upload, notes.
+   - Mark reports as confidential.
+
+Student request flow:
+Build a secure request submission form with the following fields:
+- Full name
+- Email used with the university
+- Student ID (optional)
+- Short case description
+- Can you currently access your secondary school certificate? (yes/no/partially)
+- Governorate / city (optional)
+- Available supporting documents upload
+- Confirmation checkbox:
+  “I understand this service is free and confidential and I agree not to share any customized communication instructions or contact details provided to me.”
+
+After submission:
+- Automatically generate a unique case number like CASE-2026-0001
+- Show confirmation page with case number
+- Send secure confirmation email
+- Student can later track status using case number + email verification code
+
+Case statuses:
+- Received
+- Under review
+- Need more information
+- Approved for guidance
+- Draft prepared
+- Awaiting student sending
+- Sent by student
+- Follow-up in progress
+- Completed
+- Closed
+
+Student dashboard:
+Create a secure student portal where the student can:
+- Enter case number and email verification code
+- View only their current status
+- Upload requested documents
+- Read only the current instruction for their case
+- Receive a customized email draft if approved
+- Confirm they have sent the email
+- Upload screenshot from Sent folder
+- Never see internal notes
+- Never see other cases
+- Never see the full process map
+- Never see advisor directory or template library
+
+Very important restriction:
+Students should only see one step at a time.
+For example:
+- If case is under review, they only see that.
+- If more info is needed, they only see the exact missing info request.
+- If approved, they only see their personalized draft and sending instructions.
+Do not expose future steps.
+
+Internal admin panel:
+Create a private admin dashboard with role-based access:
+Roles:
+1. Intake
+2. Verification
+3. Drafting & follow-up
+4. Records admin
+5. Super admin
+
+Admin features:
+- View all cases
+- Filter by status
+- Search by case number, name, or email
+- Add internal notes
+- Assign case to team member
+- Request more information
+- Change status
+- Upload and manage internal-only templates
+- Generate customized email drafts
+- Log when and to whom final sending instructions were released
+- Flag suspicious or abusive submissions
+- Export minimal reports
+
+Confidentiality controls:
+- Role-based permissions
+- Sensitive fields hidden unless role permits access
+- Advisor/counselor email addresses stored in a protected internal area only
+- One-time reveal option for sensitive final contact details
+- Audit log for every sensitive action
+- Two-factor authentication for admins
+- Session timeout
+- Rate limiting and bot protection
+- Disable public indexing of private pages
+- Secure file upload handling
+- Encrypt sensitive data at rest and in transit
+
+Leak reduction features:
+- Customized email drafts should support small controlled variations so each case has a slightly different wording pattern
+- Internal system should log which version was given to which case
+- Student-facing pages should avoid copyable operational guides
+- Use expiring access links or OTP verification for sensitive steps
+- Screenshot uploads should be visible only to authorized roles
+- Add optional watermarking or subtle trace markers in generated drafts for internal tracking
+
+Homepage copy ideas in Arabic:
+Headline:
+“منصة مساعدة مجانية وسرية للطلاب المتضررين في ملف إثبات إتمام المرحلة الثانوية”
+Subheadline:
+“نراجع كل حالة بشكل منظم، ونوفر توجيهًا خاصًا وآمنًا، دون أي مقابل مادي”
+Warning box:
+“تنبيه: أي شخص يطلب مبلغًا ماليًا مقابل هذه المساعدة لا يمثل الفريق”
+
+UI sections:
+- Hero section
+- Trust section: free / confidential / organized
+- Short process cards
+- FAQ
+- Contact / request CTA
+- Footer with privacy notice
+
+FAQ examples:
+- هل الخدمة مجانية؟ نعم، بالكامل.
+- هل سيتم نشر بياناتي؟ لا.
+- هل أحتاج إلى حساب؟ لا، فقط رقم الحالة والتحقق عبر البريد.
+- هل يمكنني معرفة حالة طلبي؟ نعم.
+- هل سأرى جميع خطوات العمل؟ لا، فقط ما يتعلق بحالتي الحالية.
+
+Technical requirements:
+- Build with modern stack such as Next.js + Supabase or equivalent secure stack
+- Arabic RTL support by default
+- Responsive design
+- File uploads
+- Email verification / OTP
+- Admin dashboard
+- Secure database schema for cases, users, roles, notes, templates, and audit logs
+
+Database entities:
+- students
+- cases
+- case_status_history
+- internal_notes
+- assignments
+- templates
+- generated_drafts
+- sensitive_contacts
+- uploads
+- audit_logs
+- exploitation_reports
+
+Add sample dummy data so the platform can be previewed immediately.
+
+Also create:
+- A polished landing page
+- A working request form
+- A student case tracking page
+- A login-protected admin dashboard mockup
+- Clear Arabic microcopy for forms, buttons, alerts, and status messages
+
+Do not build this as a public discussion forum.
+Do not build open messaging between students.
+Do not show internal communications publicly.
+Do not expose sensitive contact details in the source UI.
+Prioritize privacy, minimal disclosure, and operational control.

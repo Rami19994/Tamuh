@@ -1,0 +1,114 @@
+Update the project to remove the admin-side notification sending flow from case status updates and restore the admin case page to the state before the “Send Notification” button was added.
+
+Main fix required:
+The Approve and Reject actions in the admin case page must work immediately and visibly.
+Right now, clicking Approve or Reject does not update anything and does not show the result.
+Fix this so status changes are fully functional even without any email notification logic.
+
+Required behavior:
+- Remove or ignore the “Send Notification” button and related UI logic in the admin case page
+- Remove any dependency between status change and email sending
+- Status updates must work independently, even if no email system is configured
+- Clicking “Approve Case” must update the case status immediately
+- Clicking “Reject Case” must update the case status immediately
+- The result must be visible at once in the admin page
+- The updated status must be saved in the database
+- The updated status must remain correct after page refresh
+- The status history section must update after every status change
+- Show a clear success or failure message after each action
+
+Admin case page behavior:
+- Keep these main actions:
+  - Approve Case
+  - Reject Case
+  - Flag as suspicious
+- Remove the separate “Send Email Notification” action from the top action bar
+- Remove any notification toggle, email preview dependency, or send-notification requirement from the status update flow
+- Approve and Reject must be direct status actions, not blocked by notification settings
+
+Approve action requirements:
+- When the admin clicks “Approve Case”, update the case status to the correct approved state
+- If the system uses a workflow, move it to the next approved stage
+- Show confirmation feedback in the UI
+- Add a record to status history
+- Add an audit log entry
+
+Reject action requirements:
+- When the admin clicks “Reject Case”, update the case status to “Rejected”
+- Allow the admin to enter an internal rejection reason
+- Optionally allow a short student-facing rejection note to be saved, but do not send it by email automatically
+- Show confirmation feedback in the UI
+- Add a record to status history
+- Add an audit log entry
+
+Important bug fix:
+- Investigate why the current Approve/Reject buttons do not visibly update the UI
+- Fix any broken onClick handler, failed API mutation, stale state issue, cache issue, missing database update, or failed optimistic UI update
+- Ensure the frontend re-fetches or updates local state correctly after approval/rejection
+- Ensure the response from the backend is handled correctly
+- Do not silently fail
+
+State synchronization requirements:
+- After changing status, update:
+  - the visible current status badge
+  - the status history panel
+  - the student-facing status in the student portal
+  - the internal audit log
+- Status changes must persist after refresh
+- If the backend update fails, show a real error message
+
+Do not require email sending:
+- Do not block approval or rejection because SMTP is missing
+- Do not show “mock notification” or “send notification” popups during status change
+- Do not require the admin to preview or send an email before the status is saved
+- Status saving must be completely independent from email
+
+Keep these existing features:
+- Arabic RTL UI
+- secure student request form
+- student portal for case tracking
+- file uploads
+- admin attachment preview/download
+- internal notes
+- status history
+- role-based admin access
+- secure storage
+- audit logging
+
+Student portal behavior:
+- The student portal should show the updated status after the admin changes it
+- The student should see only the current status relevant to their case
+- Do not add any new notification UI to the student portal
+
+Admin attachments:
+- Keep the working attachment section
+- Admins must still be able to preview or download uploaded files
+- Do not remove attachment preview/download functionality
+
+Database / backend expectations:
+- Ensure status updates are written to the database
+- Ensure case_status_history is updated properly
+- Ensure audit_logs records approval/rejection actions
+- Ensure the API route or server action for approve/reject returns proper success/failure responses
+
+UI cleanup:
+- Remove the “Send Notification” button from the admin case page top bar
+- Remove related unused notification controls from this page
+- Keep the interface clean and focused on case management actions only
+
+Testing requirements:
+- Test approving a case and confirm:
+  - UI updates immediately
+  - database updates correctly
+  - status history updates
+  - page refresh keeps the new status
+- Test rejecting a case and confirm:
+  - UI updates immediately
+  - database updates correctly
+  - rejection state persists
+  - page refresh keeps the rejected status
+- Confirm that neither action depends on email sending
+
+Important:
+This is not a request to hide the button only.
+I need the actual case approval/rejection workflow fixed so the status really changes and is visible in the admin page and student portal, without depending on notification sending.

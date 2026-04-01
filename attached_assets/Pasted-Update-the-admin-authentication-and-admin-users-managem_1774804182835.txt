@@ -1,0 +1,135 @@
+Update the admin authentication and admin users management workflow with the following requirements:
+
+1) Add admin account creation entry point on the Admin Login page
+- On the Admin Login page, add a clear secondary action/button or link such as:
+  - “إنشاء حساب إداري”
+- This option must not create public unrestricted signup
+- The create-admin flow must be secure and controlled
+
+2) Secure create-admin behavior
+- If no super admin exists in the database yet:
+  - allow creation of the first super admin account from the Admin Login page through a protected bootstrap flow
+  - after the first super admin is created, disable open bootstrap creation automatically
+- If a super admin already exists:
+  - the “Create Admin Account” entry on the login page must not allow unrestricted public account creation
+  - instead, it should either:
+    - show a message that admin account creation is restricted to super admin
+    - or require super admin authentication before allowing creation
+- Do not allow normal visitors to create admin accounts once the first super admin exists
+
+3) Create Admin Account form
+Add a secure create-admin form with these fields:
+- full name
+- username
+- email (optional)
+- password
+- confirm password
+- role
+- active/inactive status
+
+Supported roles:
+- intake_officer
+- verification_officer
+- drafting_followup_officer
+- records_officer
+- admin
+- super_admin
+
+Validation requirements:
+- username must be unique
+- password and confirm password must match
+- minimum password rules:
+  - at least 8 characters
+  - at least one uppercase letter
+  - at least one lowercase letter
+  - at least one number
+
+4) Password handling
+- Passwords must NEVER be stored in plain text
+- Passwords must be hashed securely before saving
+- Use bcrypt or Argon2
+- Store only passwordHash in the database
+- Never expose passwords or hashes in the UI or API responses
+
+5) Login page UX
+- Keep the existing admin login form
+- Add a secondary button/link for admin account creation
+- Entire page must remain Arabic RTL
+- Use clear Arabic labels and validation messages
+- If account creation is not allowed for the current situation, show a clear Arabic message
+
+6) Users page permissions
+Update the “Users” page so that it is editable only when the logged-in admin’s role in the database is exactly:
+- super_admin
+
+Required behavior:
+- If current logged-in admin role = super_admin:
+  - allow full user management actions:
+    - create admin account
+    - edit role
+    - activate/deactivate account
+    - reset password
+- If current logged-in admin role is NOT super_admin:
+  - the users page must be read-only or access-restricted
+  - hide or disable all edit actions
+  - do not allow role changes
+  - do not allow creating new admin accounts
+  - do not allow activating/deactivating accounts
+  - do not allow password reset for other admins
+  - optionally show a message like:
+    “ليس لديك صلاحية تعديل حسابات المسؤولين”
+
+7) Enforce permission checks on backend, not UI only
+- Do not rely فقط on hiding buttons
+- Backend/API must verify the logged-in admin role from the database
+- Only super_admin may perform admin-user management mutations
+- Non-super-admin requests must return 403 Forbidden
+
+8) Users page behavior
+- Keep the users list page
+- Show:
+  - full name
+  - username
+  - role
+  - active status
+  - created date
+  - last login if available
+- For super_admin:
+  - show edit controls
+- For non-super-admin:
+  - show read-only view only
+
+9) Additional account management
+- Add “Change My Password” for logged-in admins
+- Add “Reset Admin Password” only for super_admin
+- Require secure hashing for all password updates
+- Log all changes in audit logs
+
+10) Audit logs
+Log these actions:
+- admin account created
+- admin account updated
+- role changed
+- account activated/deactivated
+- password reset
+- own password changed
+
+11) Database requirements
+Ensure admin users table supports:
+- id
+- fullName
+- username
+- email
+- passwordHash
+- role
+- isActive
+- createdAt
+- updatedAt
+- lastLoginAt
+
+12) Important security constraints
+- Do not implement unrestricted public admin signup
+- Do not store plain-text passwords
+- Do not expose password hashes
+- Do not allow non-super-admin users to modify admin accounts
+- The source of truth for permissions must be the role stored in the database, not only frontend state

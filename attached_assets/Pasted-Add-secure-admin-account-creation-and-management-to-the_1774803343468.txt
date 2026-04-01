@@ -1,0 +1,135 @@
+Add secure admin account creation and management to the system.
+
+Admin authentication and account management requirements:
+- Add a secure admin authentication module
+- Keep the existing admin login page
+- Add a new admin management section inside the admin dashboard
+- Add a “Create Admin Account” feature
+
+Important security rule:
+- Passwords must NEVER be stored in plain text
+- Passwords must be hashed securely before saving to the database
+- Use bcrypt or Argon2 for password hashing
+- Store only passwordHash in the database
+- Never expose passwords in API responses, logs, or client-side code
+
+Create Admin Account feature:
+- Only super admin can create new admin accounts
+- Add a form in the admin dashboard for creating admin users
+- Required fields:
+  - full name
+  - username
+  - password
+  - confirm password
+  - role
+  - active/inactive status
+- Optional fields:
+  - email
+- Validate that username is unique
+- Validate password confirmation matches
+- Validate minimum password strength:
+  - minimum 8 characters
+  - at least one uppercase letter
+  - at least one lowercase letter
+  - at least one number
+- On submit:
+  - hash the password securely
+  - save the new admin user in the database
+  - log the action in audit logs
+  - show a clear success or error message
+
+Admin roles:
+- Support these roles:
+  - intake_officer
+  - verification_officer
+  - drafting_followup_officer
+  - records_officer
+  - admin
+  - super_admin
+- Only super admin can:
+  - create admin accounts
+  - deactivate admin accounts
+  - change admin roles
+  - reset admin passwords
+
+Admin account management page:
+- Add a secure page to list admin users
+- Show:
+  - full name
+  - username
+  - role
+  - active status
+  - created date
+  - last login if available
+- Add actions:
+  - create admin
+  - edit role
+  - activate/deactivate
+  - reset password
+- Do not show password hashes in the UI
+
+Password reset and change:
+- Add a secure “Reset Admin Password” feature
+- Only super admin can reset another admin’s password
+- Add a “Change My Password” feature for logged-in admins
+- Old password must be required when changing own password
+- New password must be hashed before saving
+- Log all password reset/change actions in audit logs
+
+Initial bootstrap admin:
+- If no admin account exists yet, allow creation of the first super admin account through a protected bootstrap flow
+- After the first super admin is created, disable public bootstrap access
+- Alternatively, support initial super admin creation through environment variables on first run
+
+Authentication behavior:
+- Use secure login validation against hashed passwords
+- Keep token-based or secure session-based authentication
+- Do not accept plain-text database password matching
+- Reject invalid credentials with a generic error message
+- Add login audit logging if possible
+
+Database requirements:
+- Ensure admin users table includes fields such as:
+  - id
+  - fullName
+  - username
+  - email
+  - passwordHash
+  - role
+  - isActive
+  - createdAt
+  - updatedAt
+  - lastLoginAt
+- Ensure passwordHash is the only stored password field
+
+API requirements:
+- Add protected admin-only endpoints for:
+  - create admin account
+  - list admin accounts
+  - update admin role
+  - activate/deactivate admin
+  - reset admin password
+  - change own password
+- Only authorized roles can access these endpoints
+
+UI/UX requirements:
+- Entire UI remains Arabic RTL
+- Admin creation form should have clear Arabic labels
+- Show validation messages in Arabic
+- Show success/failure feedback clearly
+- Keep the design consistent with the rest of the admin dashboard
+
+Audit logging:
+- Log these actions:
+  - admin account created
+  - admin role changed
+  - admin activated/deactivated
+  - password reset
+  - password changed
+  - admin login if implemented
+
+Important constraints:
+- Do not implement public signup for admins
+- Do not store plain-text passwords
+- Do not expose password hashes in the admin panel
+- Do not allow non-super-admin users to create or manage admin accounts

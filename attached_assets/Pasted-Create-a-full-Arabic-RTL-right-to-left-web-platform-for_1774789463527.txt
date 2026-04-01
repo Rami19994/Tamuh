@@ -1,0 +1,282 @@
+Create a full Arabic RTL (right-to-left) web platform for a volunteer team that helps University of the People students who are unable to submit proof of secondary school completion because of ongoing violence and difficulty accessing documents in Sweida since July.
+
+The platform must be professional, simple, confidential, mobile-friendly, and built for real operational case management, not just as an informational page.
+
+Main goal:
+Build a secure case-management website that allows students to request free and confidential help, while reducing exploitation, preventing workflow leakage, and ensuring that each student sees only the exact step they need at their current stage.
+
+Core principles:
+- The service is completely free.
+- Anyone asking for money does not represent the team.
+- The platform must protect student privacy.
+- Students must not see the full workflow.
+- Students must not see counselor/advisor email addresses or sensitive contact details except at the final stage and only if their case is approved.
+- The platform must follow the principle of “minimum necessary disclosure.”
+- The team does not send emails on behalf of students. The student sends from their own email after receiving a customized draft and final instructions.
+
+Language and design:
+- The entire website must be in Arabic.
+- Full RTL support.
+- Clean, modern, trustworthy design.
+- Colors: white, dark blue, gray, with subtle green accents.
+- Clear, readable typography.
+- Mobile-first responsive design.
+- Tone: respectful, serious, humanitarian, non-political, and non-commercial.
+
+Public pages:
+1) Home page
+- Brief explanation of the service.
+- Emphasize that it is free, confidential, and organized.
+- A clear warning banner: anyone asking for money does not represent us.
+- Main CTA button: “تقديم طلب مساعدة”
+- Main CTA button: “التحقق من حالة الطلب”
+
+2) “How it works” page
+- Show only high-level steps, without revealing sensitive operational details:
+  - Submit request
+  - Review and verification
+  - Customized guidance
+  - Follow-up
+- Do not reveal internal operational details, counselor names, or escalation structure.
+
+3) Privacy and confidentiality page
+- Explain that the platform collects only the minimum necessary data.
+- Explain that data is accessible only to authorized personnel.
+- Explain that successful case details and sensitive communications are not publicly shared.
+
+4) Exploitation reporting page
+- A simple form for reporting anyone asking for money in exchange for help.
+- Fields:
+  - Name or alias
+  - Contact method
+  - Upload image or screenshot
+  - Additional notes
+- Reports must be marked as confidential.
+
+Student request flow:
+Create a secure assistance request form with the following fields:
+- Full name
+- Email used with the university
+- Student ID (optional)
+- Short case description
+- Can you currently access your secondary school certificate? (Yes / No / Partially)
+- Region / area as a dropdown list with these options only:
+  - Sweida
+  - Rural Sweida
+  - Jabal al-Sheikh
+  - Jaramana
+  - Sahnaya
+  - Ashrafiyat Sahnaya
+- Upload supporting documents if available
+- Dedicated field to upload an ID image
+- Dedicated field to upload a screenshot of grades/marks
+- Confirmation checkbox with the following text:
+  “I understand that this service is free and confidential, and I agree not to share any customized instructions or sensitive contact details provided to me.”
+
+After submission:
+- Automatically generate a unique case number such as:
+  CASE-2026-0001
+- Show a confirmation page with the case number
+- Send a secure confirmation email to the email address entered in the email field
+- Allow the student to later track the case using the case number + email verification code
+
+Case statuses:
+- Received
+- Under review
+- Need more information
+- Approved for guidance
+- Draft prepared
+- Awaiting student sending
+- Sent by student
+- Follow-up in progress
+- Completed
+- Closed
+- Rejected
+
+Email notification requirements:
+- The system must send automatic email notifications to the exact email address entered by the student in the email field
+- Email notifications must be triggered whenever the case status changes
+- Each email must clearly include:
+  - Case number
+  - Updated case status
+  - Short explanation of what the new status means
+  - Any action required from the student, if applicable
+  - A secure link or instruction to check the case status page
+- The system must send different email content depending on the status value
+- Example email updates:
+  - Received: confirm that the request has been received
+  - Under review: inform the student that the case is currently being reviewed
+  - Need more information: explain exactly what information or files are missing
+  - Approved for guidance: inform the student that the case has been accepted for the next step
+  - Draft prepared: notify the student that a customized email draft is available
+  - Awaiting student sending: ask the student to send the prepared email and upload a screenshot after sending
+  - Sent by student: confirm that the student submission has been logged
+  - Follow-up in progress: inform the student that follow-up is ongoing
+  - Completed: inform the student that the case has been completed
+  - Rejected: inform the student that the case has been rejected, with a short reason if allowed by admin settings
+  - Closed: inform the student that the case is closed
+- Email notifications must be in Arabic
+- Emails must have clean Arabic RTL formatting
+- Emails must be professional, concise, and easy to understand
+- Admin users must be able to control whether a student-facing email notification is sent when changing a status
+- The system should support default email templates for each status
+- The system should allow admins to optionally customize the outgoing student-facing message before sending
+- Log every sent email notification in the admin activity log, including timestamp, recipient, case number, status, and whether delivery was attempted successfully
+
+Student portal:
+Create a secure student portal that allows the student to:
+- Enter the case number and email verification code
+- View only the current case status
+- Upload requested documents
+- Read only the current instruction related to their case
+- Receive a customized email draft if approved
+- Confirm that they have sent the email
+- Upload a screenshot from the “Sent” folder
+- Not see any internal notes
+- Not see any other cases
+- Not see the full workflow map
+- Not see the counselor/advisor directory or template library
+
+Very important restriction:
+The student must see only one step at a time.
+Examples:
+- If the case is under review, they only see that it is under review.
+- If more information is needed, they only see exactly what is missing.
+- If approved, they only see their customized email draft and current sending instructions.
+- Do not expose future steps or the complete workflow.
+
+Internal admin dashboard:
+Create a secure internal admin panel for the team with role-based access.
+
+Roles:
+1) Intake officer
+2) Verification officer
+3) Drafting and follow-up officer
+4) Records officer
+5) Super admin
+
+Admin dashboard features:
+- View all cases
+- Filter by case status
+- Search by case number, name, or email
+- Add internal notes
+- Assign a case to a team member
+- Request more information from the student
+- Change case status
+- Manage private internal templates
+- Generate customized email drafts for students
+- Log when and to whom sensitive sending instructions were revealed
+- Flag suspicious or abusive submissions
+- Export brief reports
+- Internal activity log
+- A clear option for admins to approve or reject a case from the admin page
+- If a case is rejected, the admin must be able to add a rejection reason as an internal note or a short student-facing message
+- If a case is approved, it should move automatically or manually to the next stage depending on system design
+- Authorized admins must be able to access all files and attachments for each case, including:
+  - ID image
+  - Screenshot of grades/marks
+  - Other supporting documents
+  - Follow-up screenshots
+- In the admin case page, all student-uploaded attachments must be displayed in a clear dedicated attachments section
+- The admin must be able to view attached files directly inside the admin page without needing to download them first whenever possible
+- Images should open in a preview viewer/lightbox inside the admin interface
+- PDFs should be viewable in an embedded viewer inside the admin page
+- Other file types should show filename, file type, upload date, and secure download/open options
+- Each attachment should be labeled clearly by category, such as:
+  - ID image
+  - Grades screenshot
+  - Supporting document
+  - Sent-email screenshot
+- The admin attachments section should support thumbnail previews for images
+- Attachments should be organized neatly and be easy to review from the admin panel
+- Access to attachment viewing must remain limited to authorized admin roles only
+- When an admin changes the case status, the admin page should include an option to send the corresponding email update immediately to the student’s email address
+- The admin should be able to preview the outgoing email before sending it
+- The admin should be able to edit the short student-facing status message before sending, while keeping the case status value structured internally
+
+Confidentiality and security controls:
+- Role-based permissions
+- Sensitive fields hidden unless the role allows access
+- Store counselor/advisor email addresses and sensitive contact details in a protected internal area only
+- One-time reveal option for some sensitive details
+- Audit log for every sensitive action
+- Two-factor authentication for admin users
+- Automatic session timeout
+- Rate limiting and bot protection
+- Prevent indexing of private pages by search engines
+- Secure file upload handling
+- Encrypt sensitive data in transit and at rest
+
+Leak-reduction features:
+- Customized drafts must support small controlled wording variations between cases
+- The system must log which draft version was given to which case
+- The student-facing interface must avoid exposing copyable operational guides
+- Use expiring links or OTP verification for sensitive steps
+- Uploaded screenshots must be visible only to authorized roles
+- Support optional hidden trace markers or subtle text differences in generated drafts for internal tracking
+
+Suggested Arabic UI copy for the homepage:
+Main headline:
+“منصة مساعدة مجانية وسرية للطلاب المتضررين في ملف إثبات إتمام المرحلة الثانوية”
+
+Subheadline:
+“نراجع كل حالة بشكل منظم، ونوفر توجيهًا خاصًا وآمنًا، دون أي مقابل مادي”
+
+Warning box:
+“تنبيه: أي شخص يطلب مبلغًا ماليًا مقابل هذه المساعدة لا يمثل الفريق”
+
+Homepage sections:
+- Main hero section
+- Trust section: free / confidential / organized
+- Short process cards
+- FAQ
+- Apply / check status CTA
+- Footer with privacy notice
+
+FAQ:
+- Is the service free? Yes, completely.
+- Will my data be published? No.
+- Do I need an account? No, only a case number and email verification.
+- Can I track my request status? Yes.
+- Will I see all workflow steps? No, only what is relevant to your current case.
+
+Technical requirements:
+- Use a modern stack such as Next.js with Supabase, or any similar secure alternative
+- Arabic and RTL support by default
+- Responsive design
+- File uploads
+- Email verification or OTP
+- Transactional email support for automated case-status updates
+- Internal admin dashboard
+- Secure database for cases, users, roles, notes, templates, and audit logs
+
+Database entities:
+- students
+- cases
+- case_status_history
+- internal_notes
+- assignments
+- templates
+- generated_drafts
+- sensitive_contacts
+- uploads
+- audit_logs
+- exploitation_reports
+- email_notifications
+
+Also generate ready-to-use demo data so the platform can be previewed immediately.
+
+Required outputs:
+- A polished landing page
+- A working help request form
+- A student case-tracking page
+- A login-protected admin dashboard or admin panel mockup
+- Clear Arabic microcopy for buttons, forms, alerts, and messages
+- Example Arabic email templates for each case status
+
+Important constraints:
+- Do not create a public discussion forum
+- Do not create open messaging between students
+- Do not expose internal communications to the public
+- Do not reveal sensitive contact details in the public UI or exposed source output
+- Prioritize privacy, minimum disclosure, and operational control

@@ -1,0 +1,54 @@
+Configure the project to use real email sending with Brevo SMTP instead of mock mode.
+
+Use SMTP, not Resend.
+
+SMTP configuration requirements:
+- SMTP host: smtp-relay.brevo.com
+- SMTP port: 587
+- Secure connection: false for port 587
+- Read SMTP credentials from environment variables only
+- Do not hardcode credentials in source code
+- Do not use simulation or mock mode once SMTP variables are present
+
+Required environment variables:
+- SMTP_HOST
+- SMTP_PORT
+- SMTP_USER
+- SMTP_PASS
+- SMTP_FROM
+- SMTP_SECURE
+
+Implementation requirements:
+- Use real SMTP sending for student case-status notifications
+- Keep Arabic RTL email templates
+- Keep notification logging in the admin dashboard
+- Show delivery success or failure clearly
+- When changing case status, send a real email to the student if email sending is enabled
+- If SMTP variables are missing, show exactly which variable is missing
+- If SMTP is configured correctly, disable mock notification mode completely
+
+Recommended implementation:
+- Use Nodemailer with Brevo SMTP
+- Create a reusable mail transport service
+- Test connection on startup or via a protected admin action
+- Log SMTP errors clearly in server logs
+
+Email behavior:
+- Send actual case update emails to the student email address
+- Include case number, current status, short explanation, and next action if needed
+- Keep emails in Arabic and properly formatted RTL
+- Allow admin preview before sending
+- Log every email send attempt with timestamp, recipient, status, and result
+
+Admin panel behavior:
+- If SMTP is configured and working, send real emails
+- If SMTP is not configured, show a clear warning in admin
+- Add a “Test SMTP connection” action for admins
+- Add a “Send test email” action to verify configuration
+
+Important:
+- Credentials must come only from environment variables
+- Do not store SMTP username or password in database
+- Do not expose SMTP credentials in client-side code
+- Do not use the Replit Resend popup
+- Use Brevo SMTP only

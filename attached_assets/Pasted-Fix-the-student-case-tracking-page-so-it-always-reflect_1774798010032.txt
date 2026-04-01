@@ -1,0 +1,82 @@
+Fix the student case-tracking page so it always reflects the latest real case status from the admin panel, including all later workflow stages.
+
+Current bug:
+When the admin updates the case status to “Awaiting student sending” or any later status after that, the student tracking page does not show the updated status correctly.
+
+Required fix:
+- The student tracking page must always display the latest saved case status from the database
+- Do not stop status display at early workflow stages only
+- Ensure all statuses are supported in the student-facing page, especially:
+  - Received
+  - Under review
+  - Need more information
+  - Approved for guidance
+  - Draft prepared
+  - Awaiting student sending
+  - Sent by student
+  - Follow-up in progress
+  - Completed
+  - Closed
+  - Rejected
+
+What to fix:
+1. Database/state sync
+- Verify that admin status changes are actually saved in the database
+- Verify that the student portal reads the latest status from the same source of truth
+- Remove any stale cache, hardcoded fallback, or outdated local state
+
+2. Status mapping
+- Check whether the student page has incomplete status mapping
+- Add proper Arabic student-facing labels and UI states for all later statuses
+- Do not let unrecognized later statuses fall back to an older status
+
+3. Student page rendering
+- When status becomes “Awaiting student sending”, show the correct student-facing state and related instructions
+- When status becomes “Sent by student”, show that correctly
+- When status becomes “Follow-up in progress”, show that correctly
+- When status becomes “Completed”, show that correctly
+- When status becomes “Closed” or “Rejected”, show that correctly
+
+4. Step-by-step student flow
+- The student must still see only the current relevant step
+- But the current step must update correctly for every later status
+- Do not freeze the student page at “Draft prepared” or any earlier stage
+
+5. Re-fetch/update behavior
+- After admin changes the status, the student page must show the new status on refresh
+- If using client-side state, ensure it re-fetches correctly
+- If using server-side rendering, ensure it reads the current database value
+- If using cached responses, invalidate the cache after status change
+
+6. Instructions by status
+- For “Awaiting student sending”, show the draft/instruction block telling the student to send the email and upload the sent screenshot
+- For “Sent by student”, show confirmation that the student action was recorded
+- For “Follow-up in progress”, show a waiting/follow-up message
+- For “Completed”, show completion message
+- For “Rejected”, show rejection state
+- For “Need more information”, show exactly what is missing
+
+7. Admin/student consistency
+- The admin page current status badge and the student page current status must always match
+- The status history should also remain consistent
+
+8. Debugging
+- Investigate whether this is caused by:
+  - incomplete enum mapping
+  - stale frontend state
+  - missing revalidation
+  - API returning old data
+  - student page filtering out later statuses
+- Fix the actual root cause, not just the label
+
+Testing requirements:
+- Update a case from admin to “Awaiting student sending” and confirm the student page shows it
+- Update to “Sent by student” and confirm the student page shows it
+- Update to “Follow-up in progress” and confirm the student page shows it
+- Update to “Completed” and confirm the student page shows it
+- Refresh after each change and confirm persistence
+- Do not rely on notification sending for status visibility
+
+Important:
+This is a real synchronization/rendering bug.
+Fix the student tracking page so all later case statuses appear correctly and immediately after admin updates them.

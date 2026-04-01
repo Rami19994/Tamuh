@@ -1,0 +1,100 @@
+Update the student portal and admin workflow for the “Follow-up in progress” status.
+
+New required behavior:
+When the case status becomes “Follow-up in progress”, the student portal must show a dedicated follow-up response section.
+
+Student portal requirements for “Follow-up in progress”:
+- Show the current status clearly as: “المتابعة جارية”
+- Show a new question to the student:
+  “هل تلقيت تحديثًا على البريد الإلكتروني بخصوص هذا الطلب؟”
+- Show exactly two response options:
+  - “نعم”
+  - “قيد الانتظار”
+
+Behavior when the student selects “نعم”:
+- Show a required upload field for a screenshot of the email reply/update
+- Label it clearly in Arabic, for example:
+  “يرجى إرفاق لقطة شاشة للتحديث أو الرد الذي وصلك عبر البريد الإلكتروني”
+- Add a submit/confirm button
+- When the student submits the screenshot:
+  - Save the uploaded file securely
+  - Store it in the database as a new attachment category, such as:
+    - follow_up_reply_screenshot
+  - Record that the student has confirmed receiving an email update
+  - Create an internal admin alert/task that this case now needs final review
+  - Do not automatically change the final case result to completed or rejected
+  - Instead, move the case into an internal admin-review-needed state or flag it for admin review
+  - Keep the student-facing status clear and appropriate, such as:
+    - “تم استلام ردك وهو قيد مراجعة الإدارة”
+    or keep “المتابعة جارية” with a note that the reply screenshot has been submitted and is under review
+- The admin must then review the uploaded screenshot and decide the new final status:
+  - Completed
+  - Rejected
+
+Behavior when the student selects “قيد الانتظار”:
+- Keep the visible student status unchanged as:
+  - “المتابعة جارية”
+- Do not require any upload
+- Optionally save that the student is still waiting, but do not move the case forward
+- The student portal should remain in the same status and continue showing that follow-up is ongoing
+
+Important UI logic:
+- When the status is “Follow-up in progress”, do not show outdated sections that belong to earlier stages, such as the customized email draft block if it is no longer relevant
+- Replace that section with the follow-up response question and the Yes / Still waiting workflow
+- The student should see only the current relevant step for this stage
+
+Admin dashboard updates:
+- In the admin case page, add support for the new student-submitted follow-up screenshot
+- Show the uploaded follow-up reply screenshot in the attachments section with a clear label, such as:
+  - “لقطة شاشة رد البريد الإلكتروني”
+- Show a clear admin indicator that the student reported receiving an email update
+- Add an internal review flag or status showing that admin action is needed
+- After reviewing the screenshot, the admin must be able to set the next status manually to:
+  - Completed
+  - Rejected
+- Do not automate this final decision
+- Keep the final decision fully under admin control
+
+Database / backend changes:
+- Add support for storing the student’s follow-up response choice:
+  - yes
+  - still_waiting
+- Add support for storing the uploaded follow-up screenshot
+- Add a new attachment category:
+  - follow_up_reply_screenshot
+- Add audit log entries for:
+  - student selected “yes”
+  - student selected “still waiting”
+  - screenshot uploaded
+  - admin reviewed the follow-up submission
+  - admin marked case as completed or rejected
+
+Student status rendering:
+- If the student selected “yes” and uploaded the screenshot, show a confirmation message such as:
+  “تم استلام الرد المرفق وسيتم مراجعته من قبل الإدارة لتحديد النتيجة النهائية.”
+- If the student selected “قيد الانتظار”, keep showing:
+  “المتابعة جارية”
+  with a note such as:
+  “يمكنك العودة لاحقًا عند استلام أي تحديث عبر البريد الإلكتروني.”
+
+Validation requirements:
+- The screenshot upload must be required only when the student selects “نعم”
+- The student must not be able to submit “نعم” without attaching the screenshot
+- The student must not be forced to upload anything when selecting “قيد الانتظار”
+
+Testing requirements:
+- Set a case to “Follow-up in progress”
+- Confirm the student sees the question and the two options:
+  - نعم
+  - قيد الانتظار
+- Select “قيد الانتظار” and confirm the student status remains “المتابعة جارية”
+- Select “نعم”, upload a screenshot, and confirm:
+  - the upload is saved
+  - the admin can see it
+  - the case is flagged for admin review
+  - the admin can then mark it as completed or rejected
+- Confirm the student portal no longer shows irrelevant earlier-stage sections during follow-up stage
+
+Important:
+This must be a real workflow update, not just a visual mockup.
+The student portal, database, attachments, and admin dashboard must all support this follow-up response flow correctly.
