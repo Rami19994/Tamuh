@@ -1,0 +1,620 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Sweida Student Help Platform API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: cases
+    description: Student case management
+  - name: admin
+    description: Admin operations
+  - name: reports
+    description: Exploitation reports
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /cases:
+    post:
+      operationId: submitCase
+      tags: [cases]
+      summary: Submit a new student case
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitCaseRequest"
+      responses:
+        "201":
+          description: Case submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubmitCaseResponse"
+        "400":
+          description: Bad request
+
+  /cases/track:
+    post:
+      operationId: trackCase
+      tags: [cases]
+      summary: Track a case by case number and email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TrackCaseRequest"
+      responses:
+        "200":
+          description: Case status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrackCaseResponse"
+        "404":
+          description: Case not found
+
+  /cases/{caseNumber}/documents:
+    post:
+      operationId: uploadDocument
+      tags: [cases]
+      summary: Upload a document for a case
+      parameters:
+        - name: caseNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadDocumentRequest"
+      responses:
+        "200":
+          description: Document uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /cases/{caseNumber}/confirm-sent:
+    post:
+      operationId: confirmEmailSent
+      tags: [cases]
+      summary: Student confirms they sent the email
+      parameters:
+        - name: caseNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConfirmSentRequest"
+      responses:
+        "200":
+          description: Confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [admin]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLoginRequest"
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminLoginResponse"
+        "401":
+          description: Invalid credentials
+
+  /admin/cases:
+    get:
+      operationId: adminGetCases
+      tags: [admin]
+      summary: Get all cases (admin)
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: number
+        - name: limit
+          in: query
+          schema:
+            type: number
+      responses:
+        "200":
+          description: List of cases
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCasesResponse"
+
+  /admin/cases/{caseNumber}:
+    get:
+      operationId: adminGetCase
+      tags: [admin]
+      summary: Get a single case with full details (admin)
+      parameters:
+        - name: caseNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Full case details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminCaseDetail"
+
+  /admin/cases/{caseNumber}/status:
+    patch:
+      operationId: adminUpdateCaseStatus
+      tags: [admin]
+      summary: Update case status (admin)
+      parameters:
+        - name: caseNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStatusRequest"
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/cases/{caseNumber}/notes:
+    post:
+      operationId: adminAddNote
+      tags: [admin]
+      summary: Add internal note to a case (admin)
+      parameters:
+        - name: caseNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddNoteRequest"
+      responses:
+        "200":
+          description: Note added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/cases/{caseNumber}/draft:
+    post:
+      operationId: adminGenerateDraft
+      tags: [admin]
+      summary: Generate customized email draft for a case (admin)
+      parameters:
+        - name: caseNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateDraftRequest"
+      responses:
+        "200":
+          description: Draft generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/cases/{caseNumber}/assign:
+    patch:
+      operationId: adminAssignCase
+      tags: [admin]
+      summary: Assign case to team member (admin)
+      parameters:
+        - name: caseNumber
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignCaseRequest"
+      responses:
+        "200":
+          description: Case assigned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/stats:
+    get:
+      operationId: adminGetStats
+      tags: [admin]
+      summary: Get dashboard stats (admin)
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /reports/exploitation:
+    post:
+      operationId: submitExploitationReport
+      tags: [reports]
+      summary: Submit an exploitation report
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExploitationReportRequest"
+      responses:
+        "201":
+          description: Report submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+
+    SubmitCaseRequest:
+      type: object
+      required: [fullName, email, caseDescription, canAccessCertificate, consentConfirmed]
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+        studentId:
+          type: string
+        caseDescription:
+          type: string
+        canAccessCertificate:
+          type: string
+          enum: [yes, no, partially]
+        governorate:
+          type: string
+        consentConfirmed:
+          type: boolean
+
+    SubmitCaseResponse:
+      type: object
+      required: [caseNumber, message]
+      properties:
+        caseNumber:
+          type: string
+        message:
+          type: string
+        verificationCode:
+          type: string
+
+    TrackCaseRequest:
+      type: object
+      required: [caseNumber, email]
+      properties:
+        caseNumber:
+          type: string
+        email:
+          type: string
+        verificationCode:
+          type: string
+
+    TrackCaseResponse:
+      type: object
+      required: [caseNumber, status, statusLabel, currentInstruction]
+      properties:
+        caseNumber:
+          type: string
+        status:
+          type: string
+        statusLabel:
+          type: string
+        currentInstruction:
+          type: string
+        emailDraft:
+          type: string
+        additionalInfo:
+          type: string
+
+    UploadDocumentRequest:
+      type: object
+      required: [email, fileName, fileData]
+      properties:
+        email:
+          type: string
+        fileName:
+          type: string
+        fileData:
+          type: string
+        documentType:
+          type: string
+
+    ConfirmSentRequest:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+        screenshotData:
+          type: string
+
+    AdminLoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    AdminLoginResponse:
+      type: object
+      required: [token, role, name]
+      properties:
+        token:
+          type: string
+        role:
+          type: string
+        name:
+          type: string
+
+    AdminCasesResponse:
+      type: object
+      required: [cases, total, page, limit]
+      properties:
+        cases:
+          type: array
+          items:
+            $ref: "#/components/schemas/CaseSummary"
+        total:
+          type: number
+        page:
+          type: number
+        limit:
+          type: number
+
+    CaseSummary:
+      type: object
+      required: [caseNumber, fullName, email, status, statusLabel, submittedAt]
+      properties:
+        caseNumber:
+          type: string
+        fullName:
+          type: string
+        email:
+          type: string
+        status:
+          type: string
+        statusLabel:
+          type: string
+        submittedAt:
+          type: string
+        governorate:
+          type: string
+        assignedTo:
+          type: string
+        isFlagged:
+          type: boolean
+
+    AdminCaseDetail:
+      type: object
+      required: [caseNumber, fullName, email, status, statusLabel, caseDescription, submittedAt]
+      properties:
+        caseNumber:
+          type: string
+        fullName:
+          type: string
+        email:
+          type: string
+        studentId:
+          type: string
+        status:
+          type: string
+        statusLabel:
+          type: string
+        caseDescription:
+          type: string
+        canAccessCertificate:
+          type: string
+        governorate:
+          type: string
+        submittedAt:
+          type: string
+        assignedTo:
+          type: string
+        isFlagged:
+          type: boolean
+        notes:
+          type: array
+          items:
+            $ref: "#/components/schemas/InternalNote"
+        statusHistory:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusHistory"
+        currentDraft:
+          type: string
+
+    InternalNote:
+      type: object
+      required: [id, content, authorName, createdAt]
+      properties:
+        id:
+          type: number
+        content:
+          type: string
+        authorName:
+          type: string
+        createdAt:
+          type: string
+
+    StatusHistory:
+      type: object
+      required: [id, status, statusLabel, changedAt, changedBy]
+      properties:
+        id:
+          type: number
+        status:
+          type: string
+        statusLabel:
+          type: string
+        changedAt:
+          type: string
+        changedBy:
+          type: string
+
+    UpdateStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+        note:
+          type: string
+
+    AddNoteRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+
+    GenerateDraftRequest:
+      type: object
+      required: [draftContent]
+      properties:
+        draftContent:
+          type: string
+        templateId:
+          type: number
+
+    AssignCaseRequest:
+      type: object
+      required: [assignedTo]
+      properties:
+        assignedTo:
+          type: string
+
+    AdminStats:
+      type: object
+      required: [total, byStatus, recentCases]
+      properties:
+        total:
+          type: number
+        byStatus:
+          type: array
+          items:
+            $ref: "#/components/schemas/StatusCount"
+        recentCases:
+          type: array
+          items:
+            $ref: "#/components/schemas/CaseSummary"
+
+    StatusCount:
+      type: object
+      required: [status, statusLabel, count]
+      properties:
+        status:
+          type: string
+        statusLabel:
+          type: string
+        count:
+          type: number
+
+    ExploitationReportRequest:
+      type: object
+      required: [reporterNameOrAlias]
+      properties:
+        reporterNameOrAlias:
+          type: string
+        contactMethod:
+          type: string
+        notes:
+          type: string
+        screenshotData:
+          type: string
+
+    SuccessResponse:
+      type: object
+      required: [success, message]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
